@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TestVantage - Diesel Engine Overview Mock Test</title>
+<style>
+:root {
+    --primary-blue: #004CE5;   /* Matched from upload: Vibrant Electric Blue */
+    --accent-orange: #F97316;  /* Brand Identity: Vibrant Orange */
+    --text-dark: #1E293B;      /* Brand Identity: Dark Slate/Blue */
+    --success-green: #2E7D32;  /* Deep clean green for correct answers */
+    --bg-light: #F4F7FC;
+}
+body{font-family:Arial, sans-serif; margin:20px; text-align:center; background-color:#f4f7f6;}
+.brand-header { font-size: 36px; margin-bottom: 20px; font-weight: bold; }
+.brand-test { color: var(--text-dark); }
+.brand-vantage { color: var(--accent-orange); }
+
+.main-container{margin-right:260px;}
+.question{margin:20px auto; padding:20px; border:1px solid #ccc; border-radius:10px; width:70%; text-align:left; background:#fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1);}
+button{padding:12px 18px; margin:10px; font-size:16px; cursor:pointer; border-radius:5px; border:1px solid #aaa; background:#fff;} 
+button:hover{background:#e0e0e0;}
+.submit-btn { background: var(--success-green); color: white; border: none; font-weight: bold; transition: background 0.2s; }
+.submit-btn:hover { background: #1b5e20; }
+input[type='radio']{transform:scale(1.5); margin-right:10px;} 
+label{display:block; padding:12px; margin:8px 0; border:1px solid #ddd; border-radius:8px; font-size:18px; cursor:pointer; transition: 0.2s;} 
+label:hover{background:#f0f0f0;}
+#result{margin-top:20px; padding:15px; border:2px solid #000; text-align:left; background:#fff;}
+#timer{font-size:20px; color:red; font-weight:bold;}
+.correct{color:green; font-weight:bold;}
+.wrong{color:red; font-weight:bold;}
+.sol-text{color:#555; font-style:italic; margin-bottom:15px; display:block;}
+
+/* Login Window Box Styles */
+.login-box {
+    max-width: 400px;
+    margin: 80px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    text-align: left;
+}
+.login-box h2 { text-align: center; margin-bottom: 25px; color: #333; }
+.login-field { margin-bottom: 20px; }
+.login-field label { display: block; margin-bottom: 8px; font-weight: bold; border: none; padding: 0; font-size: 16px; cursor: default; }
+.login-field label:hover { background: none; }
+.login-field input { width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+.login-btn { width: 100%; background: #4CAF50; color: white; border: none; padding: 14px; font-size: 18px; font-weight: bold; margin: 10px 0 0 0; }
+.login-btn:hover { background: #45a049; }
+</style>
+</head>
+<body>
+
+<div class="brand-header">
+    <span class="brand-test">Test</span><span class="brand-vantage">Vantage</span>
+</div>
+
+<div id="login-container" class="login-box">
+    <h2>🔑 Candidate Login</h2>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="login-field">
+            <label>Username:</label>
+            <input type="text" id="username" placeholder="Enter your username" required>
+        </div>
+        <div class="login-field">
+            <label>Password:</label>
+            <input type="password" id="password" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="login-btn">Login & Start Test</button>
+    </form>
+</div>
+
+<div id="exam-container" class="main-container" style="display: none;">
+    <h2>🔧 DIESEL ENGINE OVERVIEW – MOCK TEST </h2>
+    <p>⏱ Time: 30 Minutes | ❌ Negative Marking: 0.33 per wrong answer | One Question Per Page</p>
+    <p id="timer">Time Left: 30:00</p>
+
+    <div id="palette" style="position:fixed; right:20px; top:120px; width:220px; border:1px solid #ccc; padding:10px; border-radius:10px; background:#f9f9f9; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></div>
+    <div id="quiz"></div>
+    <button onclick="prevQ()">⬅ Previous</button>
+    <button onclick="nextQ()">Next ➡</button>
+    <button onclick="confirmSubmission()" class="submit-btn">📩 Submit Exam</button>
+    
+
+    <div id="result"></div>
+</div>
+
+<script>
+let current=0, answers=[];
+let time=1800; // 30 minutes in seconds
+let timerVar = null;
+let loggedInUserRealName = ""; // Stores matching real name for scorecard display
+
+// Authorized Candidate Database
+const allowedCandidates = {
+    "ROYALMECHANICAL01": { password: "458721", name: "RABIN MAJHI" },
+    "ROYALMECHANICAL02": { password: "693184", name: "SINTU BISWAS" },
+    "ROYALMECHANICAL03": { password: "275940", name: "RUPAK PRAMANIK" },
+    "ROYALMECHANICAL04": { password: "814563", name: "SAIKAT HALDER" },
+    "ROYALMECHANICAL05": { password: "390472", name: "DALIYA BEPRI" },
+    "ROYALMECHANICAL06": { password: "526819", name: "SHRABANI GHOSH" },
+    "ROYALMECHANICAL07": { password: "741258", name: "SAYAN ROY" },
+    "ROYALMECHANICAL08": { password: "250897", name: "BAPI BISWAS" },
+};
+
+const questions=[
+{
+    q: "Q1. In a multi-cylinder in-line internal combustion engine, what is the primary structural consequence of having a longer crankshaft compared to V-type engines?<br>একটি মাল্টি-সিলিন্ডার ইন-লাইন অভ্যন্তরীণ দহন ইঞ্জিনে, V-টাইপ ইঞ্জিনের তুলনায় দীর্ঘতর ক্র্যাঙ্কশ্যাফট থাকার প্রাথমিক কাঠামোগত ফলাফল কী?",
+    options: ["(A) It permits an unlimited number of cylinders / এটি সীমাহীন সংখ্যক সিলিন্ডার ব্যবহারের অনুমতি দেয়", "(B) It necessitates a limited number of cylinders to minimize deflection / ডিফ্লেকশন কমাতে এটি সীমিত সংখ্যক সিলিন্ডার ব্যবহার বাধ্য করে", "(C) It eliminates the requirement for structural balancing / এটি কাঠামোগত ভারসাম্যের প্রয়োজনীয়তা দূর করে", "(D) It inherently reduces the torque uniformity / এটি সহজাতভাবে টর্কের অভিন্নতা হ্রাস করে"],
+    ans: 1,
+    sol: "In-line engines have longer crankshafts than other types, which inherently restricts the number of cylinders used to limit mechanical deflections and manage structural rigidity.<br>ইন-লাইন ইঞ্জিনগুলোতে অন্যান্য ধরনের তুলনায় দীর্ঘতর ক্র্যাঙ্কশ্যাফট থাকে, যা যান্ত্রিক ডিফ্লেকশন সীমিত করতে এবং কাঠামোগত দৃঢ়তা বজায় রাখতে সিলিন্ডারের সংখ্যা সীমিত করা বাধ্য করে।"
+},
+{
+    q: "Q2. Which of the following parameters is evaluated as the ratio of the volume of air drawn into the cylinder during the suction stroke to the total cylinder volume?<br>নিচের কোন প্যারামিটারটি সাকশন স্ট্রোকের সময় সিলিন্ডারে প্রবেশ করা বায়ুর পরিমাণ এবং সিলিন্ডারের মোট আয়তনের অনুপাত হিসেবে মূল্যায়ন করা হয়?",
+    options: ["(A) Thermal efficiency / তাপীয় দক্ষতা", "(B) Volumetric efficiency / ভলিউমেট্রিক এফিসিয়েন্সি", "(C) Mechanical efficiency / যান্ত্রিক দক্ষতা", "(D) Scavenging ratio / স্ক্যাভেঞ্জিং অনুপাত"],
+    ans: 1,
+    sol: "Volumetric efficiency is explicitly defined in documentation as the ratio between the clean air drawn into the cylinder during the suction stroke and the baseline volume of the cylinder.<br>ভলিউমেট্রিক এফিসিয়েন্সি নথিতে স্পষ্টভাবে সাকশন স্ট্রোকের সময় সিলিন্ডারে প্রবেশ করা বিশুদ্ধ বাতাসের পরিমাণ এবং সিলিন্ডারের মূল আয়তনের অনুপাত হিসেবে সংজ্ঞায়িত করা হয়েছে।"
+},
+{
+    q: "Q3. Consider the operating characteristics of External Combustion Engines (ECE) and Internal Combustion Engines (ICE):<br>Statement I: External combustion engines can be initiated instantaneously at full load without pre-heating.<br>Statement II: Internal combustion engines do not suffer from standby fuel losses when the engine is not running during short halts.<br>বাহ্যিক দহন ইঞ্জিন (ECE) এবং অভ্যন্তরীণ দহন ইঞ্জিন (ICE)-এর পরিচালন বৈশিষ্ট্য বিবেচনা করুন:<br>বিবৃতি I: বাহ্যিক দহন ইঞ্জিনগুলো প্রি-হিটিং ছাড়াই পূর্ণ লোডে তাৎক্ষণিকভাবে চালু করা যেতে পারে।<br>বিবৃতি II: ছোট বিরতির সময় ইঞ্জিন বন্ধ থাকলে অভ্যন্তরীণ দহন ইঞ্জিনে কোনো স্ট্যান্ডবাই জ্বালানি অপচয় হয় না।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 1,
+    sol: "Statement I is incorrect because external combustion engines cannot start immediately; they require time to build steam pressure. Statement II is correct because ICEs have no standby fuel loss during short stops.<br>বিবৃতি I ভুল কারণ বাহ্যিক দহন ইঞ্জিন অবিলম্বে চালু হতে পারে না; বাষ্পের চাপ তৈরির জন্য সময়ের প্রয়োজন। বিবৃতি II সঠিক কারণ সংক্ষিপ্ত বিরতির সময় ICE-তে কোনো স্ট্যান্ডবাই জ্বালানি অপচয় হয় না।"
+},
+{
+    q: "Q4. In an automobile dashboard system, if the fuel tank is completely filled, what are the corresponding states of the electrical resistance and the magnetic coils in a balancing coil type fuel gauge?<br>একটি অটোমোবাইল ড্যাশবোর্ড সিস্টেমে, ফুয়েল ট্যাঙ্কটি সম্পূর্ণ পূর্ণ থাকলে, ব্যালান্সিং কয়েল টাইপের ফুয়েল গেজে বৈদ্যুতিক রেজিস্ট্যান্স এবং চৌম্বকীয় কয়েলের অবস্থা কেমন হয়?",
+    options: ["(A) Minimum resistance, left coil becomes magnetically stronger / সর্বনিম্ন রেজিস্ট্যান্স,বাম কয়েলটি চৌম্বকীয়ভাবে শক্তিশালী হয়", "(B) High resistance position, right coil (coil 11) becomes magnetically stronger / উচ্চ রেজিস্ট্যান্স অবস্থান, ডান কয়েল (কয়েল ১১) চৌম্বকীয়ভাবে শক্তিশালী হয়", "(C) Zero resistance, both coils maintain equal magnetic intensity / শূন্য রেজিস্ট্যান্স, উভয় কয়েল সমান চৌম্বকীয় তীব্রতা বজায় রাখে", "(D) High resistance position, left coil (coil 12) becomes magnetically stronger / উচ্চ রেজিস্ট্যান্স অবস্থান, বাম কয়েল (কয়েল ১২) চৌম্বকীয়ভাবে শক্তিশালী হয়"],
+    ans: 1,
+    sol: "When the tank is full, the float arm moves the sliding contact to the high resistance position, which weakens coil 12 and makes coil 11 magnetically stronger, pulling the indicator pointer to 'Full'.<br>যখন ট্যাঙ্কটি পূর্ণ থাকে, ফ্লোট আর্ম স্লাইডিং কন্ট্যাক্টটিকে উচ্চ রেজিস্ট্যান্স অবস্থানে নিয়ে যায়, যা কয়েল ১২-কে দুর্বল করে এবং কয়েল ১১-কে চৌম্বকীয়ভাবে শক্তিশালী করে, নির্দেশক পয়েন্টারকে 'Full'-এর দিকে টেনে নেয়।"
+},
+{
+    q: "Q5. Which of the following indicator lights on a modern dashboard signals that the drive wheels are spinning and the electronic system is actively intervening to mitigate wheel slip?<br>আধুনিক ড্যাশবোর্ডের নিচের কোন নির্দেশক আলোটি নির্দেশ করে যে ড্রাইভ হুইলগুলো ঘুরছে (spinning) এবং ইলেকট্রনিক সিস্টেমটি হুইল স্লিপ কমাতে সক্রিয়ভাবে হস্তক্ষেপ করছে?",
+    options: ["(A) Steady Traction Control Indicator / স্থির ট্র্যাকশন কন্ট্রোল নির্দেশক", "(B) Blinking Traction Control Indicator / ঝলমলে (Blinking) ট্র্যাকশন কন্ট্রোল নির্দেশক", "(C) Steady Stability Control Indicator / স্থির স্টেবিলিটি কন্ট্রোল নির্দেশক", "(D) Flashing Glow Plug Indicator / ঝলমলে গ্লো প্লাগ নির্দেশক"],
+    ans: 1,
+    sol: "According to diagnostic references, a blinking traction-control dashboard warning light specifically indicates that the electronic control system is actively intervening to prevent drive wheel spin.<br>ডায়াগনস্টিক রেফারেন্স অনুযায়ী, ড্যাশবোর্ডে একটি ব্লিংকিং ট্র্যাকশন-কন্ট্রোল সতর্কবার্তা আলো বিশেষভাবে নির্দেশ করে যে ইলেকট্রনিক কন্ট্রোল সিস্টেমটি ড্রাইভ হুইল spin প্রতিরোধে সক্রিয়ভাবে হস্তক্ষেপ করছে।"
+},
+{
+    q: "Q6. During the analysis of a four-stroke Compression Ignition (CI) engine cycle, a technician observes the valve timings. What is the standard operating angle for the opening of the fuel valve according to the standard valve timing diagram?<br>একটি চার-স্ট্রোক কম্প্রেশন ইগনিশন (CI) ইঞ্জিন সাইকেল বিশ্লেষণের সময়, একজন টেকনিশিয়ান ভালভ টাইমিং পর্যবেক্ষণ করেন। আদিম ভালভ টাইমিং ডায়াগ্রাম অনুসারে ফুয়েল ভালভ খোলার আদেশ কোণ কত?",
+    options: ["(A) 10° — 20° after TDC / TDC-এর পরে ১০° — ২০°", "(B) 25° — 40° after BDC / BDC-এর পরে ২৫° — ৪০°", "(C) 10° — 15° before TDC / TDC-এর আগে ১০° — ১৫°", "(D) 30° — 50° before BDC / BDC-এর আগে ৩০° — ৫০°"],
+    ans: 2,
+    sol: "The standard valve timing documentation states that for a four-stroke cycle diesel engine, the fuel inlet valve opens at 10° — 15° before Top Dead Centre (TDC).<br>আদর্শ ভালভ টাইমিং নথিতে উল্লেখ আছে যে, একটি চার-স্ট্রোক সাইকেল ডিজেল ইঞ্জিনের ফুয়েল ইনলেট ভালভ টপ ডেড সেন্টার (TDC)-এর ১০° — ১৫° আগে খোলে।"
+},
+{
+    q: "Q7. Which of the following design configurations represents the engine type most widely adapted for aircraft applications due to its short, light, and rigid structure that permits high combustion pressures?<br>নিচের কোন ডিজাইন কনফিগারেশনটি বিমানের অ্যাপ্লিকেশনের জন্য সবচেয়ে ব্যাপকভাবে উপযোগী ইঞ্জিনের ধরনকে প্রতিনিধিত্ব করে, কারণ এর সংক্ষিপ্ত, হালকা এবং শক্ত কাঠামো যা উচ্চ দহন চাপের অনুমতি দেয়?",
+    options: ["(A) In-line engine / ইন-লাইন ইঞ্জিন", "(B) V-engine / V-ইঞ্জিন", "(C) Opposed engine / অপোজড ইঞ্জিন", "(D) Radial engine / রেডিয়াল ইঞ্জিন"],
+    ans: 3,
+    sol: "Radial engines have a rigid, short, and light structural layout that allows higher combustion pressures and engine speeds, making them highly optimized and widely adapted for aeroplanes.<br>রেডিয়াল ইঞ্জিনগুলোর একটি শক্ত, সংক্ষিপ্ত এবং হালকা আঘাতের লেআউট থাকে যা উচ্চ দহন চাপ এবং ইঞ্জিনের গতির অনুমতি দেয়, যা তাদের বিমানের জন্য অত্যন্ত অপ্টিমাইজড এবং ব্যাপকভাবে উপযোগী করে তোলে।"
+},
+{
+    q: "Q8. In a two-stroke Spark Ignition (SI) engine, the physical process of utilizing the fresh intake air-fuel mixture to force the residual burnt exhaust gases out through the exhaust port is designated as:<br>একটি দুই-স্ট্রোক স্পার্ক ইগনিশন (SI) ইঞ্জিনে, অবশিষ্ট পোড়া এক্সহস্ট গ্যাসগুলোকে এক্সহস্ট পোর্ট দিয়ে বাইরে বের করে দেওয়ার জন্য নতুন ইনটেক এয়ার-ফুয়েল মিশ্রণ ব্যবহার করার ভৌত প্রক্রিয়াটিকে বলা হয়:",
+    options: ["(A) Supercharging / সুপারচার্জিং", "(B) Scavenging / স্ক্যাভেঞ্জিং", "(C) Detonation / ডেটonation", "(D) Turbocharging / টার্বোচার্জিং"],
+    ans: 1,
+    sol: "Scavenging is defined as the explicit mechanical process where the fresh charge of the incoming fuel mixture flows and pushes the residual burnt exhaust gases out through the open exhaust port.<br>স্ক্যাভেঞ্জিং হলো এমন একটি সুনির্দিষ্ট যান্ত্রিক প্রক্রিয়া যেখানে আগত জ্বালানি মিশ্রণের নতুন চার্জ প্রবাহিত হয় এবং অবশিষ্ট পোড়া এক্সহস্ট গ্যাসগুলোকে খোলা এক্সহস্ট পোর্ট দিয়ে বাইরে ঠেলে দেয়।"
+},
+{
+    q: "Q9. In an internal combustion engine, the spatial parameters define the relationships between different volumes. What is the correct mathematical formulation for calculating the Compression Ratio (CR)?<br>একটি অভ্যন্তরীণ দহন ইঞ্জিনে, স্থানিক প্যারামিটারগুলো বিভিন্ন আয়তনের মধ্যে সম্পর্ক নির্ধারণ করে। কম্প্রেশন রেশিও (CR) গণনার সঠিক গাণিতিক সূত্র কোনটি?",
+    options: ["(A) CR = (Vs - Vc) / Vc", "(B) CR = (Vs + Vc) / Vc", "(C) CR = Vc / (Vs + Vc)", "(D) Vs / Vc"],
+    ans: 1,
+    sol: "The formal mathematical formula for the Compression Ratio (CR) is the total volume at BDC divided by the clearance volume, which is expressed as CR = (Vs + Vc) / Vc.<br>কম্প্রেশন রেশিও (CR)-এর আনুষ্ঠানিক গাণিতিক সূত্র হলো BDC-তে মোট আয়তনকে ক্লিয়ারেন্স আয়তন দ্বারা ভাগ করা, যা CR = (Vs + Vc) / Vc হিসেবে প্রকাশ করা হয়।"
+},
+{
+    q: "Q10. A heavy vehicle experiences a sudden activation of a red dashboard warning symbol depicting a thermometer immersed in fluid. This alert explicitly communicates that:<br>একটি ভারী যানবাহনে হঠাৎ তরলে নিমজ্জিত একটি থার্মোমিটার চিত্রিত লাল ড্যাশবোর্ড সতর্কবার্তা প্রতীক সক্রিয় হয়। এই অ্যালার্টটি স্পষ্টভাবে জানায় যে:",
+    options: ["(A) The engine coolant temperature is within optimal operating limits / ইঞ্জিনের কুল্যান্টের তাপমাত্রা সর্বোত্তম অপারেটিং সীমার মধ্যে রয়েছে", "(B) The engine oil level has depleted by approximately two liters /  ইঞ্জিন অয়েলের মাত্রা প্রায় দুই লিটার কমে গেছে", "(C) The engine is overheating or is immediately about to overheat / ইঞ্জিনটি অতিরিক্ত গরম হয়ে গেছে বা অবিলম্বে অতিরিক্ত গরম হতে যাচ্ছে", "(D) The automatic transmission fluid has reached its low temperature threshold / স্বয়ংক্রিয় ট্রান্সমিশন ফ্লুইড তার কম তাপমাত্রার থ্রেশহোল্ডে পৌঁছেছে"],
+    ans: 2,
+    sol: "The classic thermometer symbol immersed in liquid is a critical dashboard engine temperature warning indicating that the engine is overheating or is about to overheat.<br>তরলে নিমজ্জিত থার্মোমিটারের ধ্রুপদী প্রতীকটি একটি গুরুত্বপূর্ণ ড্যাশবোর্ড ইঞ্জিন তাপমাত্রা সতর্কবার্তা যা নির্দেশ করে যে ইঞ্জিনটি অতিরিক্ত গরম হয়ে গেছে বা অতিরিক্ত গরম হতে যাচ্ছে।"
+},
+{
+    q: "Q11. Which of the following attributes are characteristic of a four-stroke diesel engine cycle compared to a two-stroke diesel engine cycle?<br>চার-স্ট্রোক ডিজেল ইঞ্জিন সাইকেলের কোন বৈশিষ্ট্যগুলো দুই-স্ট্রোক ডিজেল ইঞ্জিন সাইকেলের তুলনায় সত্য?",
+    options: ["(A) Higher structural simplicity and lighter flywheel requirements / উচ্চতর কাঠামোগত সরলতা এবং হালকা ফ্লাইহুইলের প্রয়োজনীয়তা", "(B) One power stroke occurs for every single revolution of the crankshaft / ক্র্যাঙ্কশ্যাফ্টের প্রতিটি একক ঘূর্ণনের জন্য একটি পাওয়ার স্ট্রোক ঘটে", "(C) Higher thermal efficiency and one power stroke in two revolutions of the crankshaft / উচ্চতর তাপীয় দক্ষতা এবং ক্র্যাঙ্কশ্যাফ্টের দুটি ঘূর্ণনে একটি পাওয়ার স্ট্রোক ঘটে", "(D) All of the Above / উপরের সবকটি"],
+    ans: 2,
+    sol: "A four-stroke engine cycle is more thermally efficient and produces one single power stroke in two full revolutions of the crankshaft, while three strokes are idle.<br>একটি চার-স্ট্রোক ইঞ্জিন সাইকেল বেশি তাপীয়ভাবে দক্ষ এবং ক্র্যাঙ্কশ্যাফ্টের দুটি পূর্ণ ঘূর্ণনে একটি একক পাওয়ার স্ট্রোক তৈরি করে, যেখানে বাকি তিনটি স্ট্রোক নিষ্ক্রিয় থাকে।"
+},
+{
+    q: "Q12. What physical event occurs inside the cylinder of a four-stroke Spark Ignition (SI) engine during the segment from 20° to 30° before Top Dead Centre (TDC) on the compression stroke?<br>একটি চার-স্ট্রোক স্পার্ক ইগনিশন (SI) ইঞ্জিনে কম্প্রেশন স্ট্রোকে টপ ডেড সেন্টার (TDC)-এর ২০° থেকে ৩০° পূর্বের অংশে সিলিন্ডারের ভিতরে কোন ভৌত ঘটনাটি ঘটে?",
+    options: ["(A) Expansion of the burnt gases / পোড়া গ্যাসের প্রসারণ", "(B) Opening of the inlet valve / ইনলেট ভালভ খোলা", "(C) Ignition of the compressed air-fuel charge via spark / স্পার্কের মাধ্যমে সংকুচিত এয়ার-ফুয়েল চার্জের প্রজ্জ্বলন", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 2,
+    sol: "In a four-stroke petrol engine cycle, the ignition (IGN) of the air-fuel charge via an electric spark is timed to take place precisely at 20° — 30° before Top Dead Centre (TDC).<br>একটি চার-স্ট্রোক পেট্রোল ইঞ্জিন সাইকেলে, বৈদ্যুতিক স্পার্কের মাধ্যমে এয়ার-ফুয়েল চার্জের প্রজ্জ্বলন (IGN) টপ ডেড সেন্টার (TDC)-এর ঠিক ২০° — ৩০° আগে ঘটার জন্য টাইমিং করা হয়।"
+},
+{
+    q: "Q13. In a dual fuel injection system layout (such as those designed by Toyota or Volkswagen), what specific mechanical issue associated with pure direct injection systems is mitigated by the inclusion of indirect port injectors?<br>একটি ডুয়াল ফুয়েল ইনজেকশন সিস্টেম লেআউটে (যেমন টয়োটা বা ভক্সওয়াগেন দ্বারা ডিজাইন করা), ইনডাইরেক্ট পোর্ট ইনজেক্টর অন্তর্ভুক্ত করার মাধ্যমে পিওর ডাইরেক্ট ইনজেকশন সিস্টেমের সাথে সম্পর্কিত কোন নির্দিষ্ট যান্ত্রিক समस्याটি প্রশমিত হয়?",
+    options: ["(A) Excessive mechanical wear of the piston rings / পিস্টন রিংয়ের অতিরিক্ত যান্ত্রিক ক্ষয়", "(B) Carbon accumulation on the back faces of the intake valves / ইনটেক ভালভের পিছনের অংশে কার্বন জমা হওয়া", "(C) High standby fuel consumption during short engine halts / ছোট ইঞ্জিন বিরতির সময় উচ্চ স্ট্যান্ডবাই জ্বালানি খরচ", "(D) Structural binding of the center differential lock / সেন্টার ডিফারেনশিয়াল লকের কাঠামোগত বাইন্ডিং"],
+    ans: 1,
+    sol: "Direct injection prevents fuel from cleaning the back faces of intake valves. Adding indirect port injectors sprays fuel onto the valves, reducing or eliminating hard carbon crust accumulation over time.<br>ডাইরেক্ট ইনজেকশন ইনটেক ভালভের পিছনের অংশ ধৌত করতে জ্বালানিকে বাধা দেয়। ইনডাইরেক্ট পোর্ট ইনজেক্টর যুক্ত করার ফলে ভালভের ওপর জ্বালানি স্প্রে হয়, যা সময়ের সাথে সাথে শক্ত কার্বন আস্তরণ জমা হওয়া হ্রাস বা নির্মূল করে।"
+},
+{
+    q: "Q14. The dynamic mechanical parameters of an automobile engine are evaluated through brake horsepower and indicated horsepower calculations. What does Frictional Horsepower (FHP) accurately represent?<br>একটি অটোমোবাইল ইঞ্জিনের গতিশীল যান্ত্রিক প্যারামিটারগুলো ব্রেক হর্সপাওয়ার এবং ইন্ডিকেটেড হর্সপাওয়ার গণনার মাধ্যমে মূল্যায়ন করা হয়। ফ্রিকশনাল হর্সপাওয়ার (FHP) নিখুঁতভাবে কী নির্দেশ করে?",
+    options: ["(A) The absolute power available at the engine flywheel for driving the vehicle / গাড়ি চালানোর জন্য ইঞ্জিনের ফ্লাইহুইলে উপলব্ধ পরম শক্তি", "(B) The ratio of useful work output to the total thermal fuel energy expended / মোট ব্যয়িত তাপীয় জ্বালানি শক্তির সাথে দরকারী কাজের আউটপুটের অনুপাত", "(C) The total power developed inside the engine cylinder during combustion / দহনের সময় ইঞ্জিনের সিলিন্ডারের ভিতরে উৎপন্ন মোট শক্তি", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 3,
+    sol: "Frictional Horsepower (FHP) represents the horsepower lost in the engine due to internal mechanical friction, calculated explicitly as FHP = IHP - BHP. Options A, B, and C describe BHP, thermal efficiency, and IHP respectively.<br>ফ্রিকশনাল হর্সপাওয়ার (FHP) অভ্যন্তরীণ যান্ত্রিক ঘর্ষণের কারণে ইঞ্জিনে নষ্ট হওয়া হর্সপাওয়ারকে নির্দেশ করে, যা স্পষ্টভাবে FHP = IHP - BHP হিসাবে গণনা করা হয়। অপশন A, B এবং C যথাক্রমে BHP, তাপীয় দক্ষতা এবং IHP বর্ণনা করে।"
+},
+{
+    q: "Q15. Consider the engineering logic behind the practical implementation of \"Valve Overlap\" in internal combustion engines:<br>Statement I: Valve overlap refers to the brief operating period during which both the inlet valve and the exhaust valve remain open simultaneously.<br>Statement II: The primary physical objective of valve overlap is to decrease the volumetric efficiency by reducing air intake velocity.<br>অভ্যন্তরীণ দহন ইঞ্জিনে \"ভালভ ওভারল্যাপ\"-এর ব্যবহারিক প্রয়োগের পিছনের ইঞ্জিনিয়ারিং যুক্তি বিবেচনা করুন:<br>বিবৃতি I: ভালভ ওভারল্যাপ বলতে সংক্ষিপ্ত অপারেটিং সময়কালকে বোঝায় যার মধ্যে ইনলেট ভালভ এবং এক্সহস্ট ভালভ উভয়ই একই সাথে খোলা থাকে।<br>বিবৃতি II: ভালভ ওভারল্যাপের প্রাথমিক ভৌত উদ্দেশ্য হলো বায়ু প্রবেশের বেগ কমিয়ে ভলিউমেট্রিক এফিসিয়েন্সি হ্রাস করা।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 0,
+    sol: "Statement I is correct because valve overlap is when both valves are open. Statement II is incorrect because its goal is to increase volumetric efficiency and clean the cylinder using intake momentum.<br>বিবৃতি I সঠিক কারণ ভালভ ওভারল্যাপ হলো যখন উভয় ভালভ খোলা থাকে। বিবৃতি II ভুল কারণ এর লক্ষ্য হলো ইনটেক মোমেন্টাম ব্যবহার করে ভলিউমেট্রিক এফিসিয়েন্সি বৃদ্ধি করা এবং সিলিন্ডার পরিষ্কার করা।"
+},
+{
+    q: "Q16. In the thermodynamic operation of a classic Diesel Cycle engine, the fuel addition (combustion) process is analytically modeled to take place under which specific state condition?<br>একটি ক্লাসিক ডিজেল সাইকেল ইঞ্জিনের থার্মোডাইনামিক অপারেশনে, জ্বালানি যোগ করা (দহন) প্রক্রিয়াটি কোন নির্দিষ্ট অবস্থার অধীনে ঘটে বলে অ্যানালিটিক্যাল মডেলিং করা হয়?",
+    options: ["(A) Constant Volume Condition / স্থির আয়তন অবস্থা", "(B) Constant Pressure Condition / স্থির চাপ অবস্থা", "(C) Constant Temperature Condition / স্থির তাপমাত্রা অবস্থা", "(D) Constant Entropy Condition / স্থির এনট্রপি অবস্থা"],
+    ans: 1,
+    sol: "By thermodynamic engineering definitions, a constant pressure cycle governs the operational parameters of the classic Diesel Cycle where heat addition occurs at constant pressure.<br>থার্মোডাইনামিক ইঞ্জিনিয়ারিং সংজ্ঞা অনুসারে, একটি কনস্ট্যান্ট প্রেসার সাইকেল ক্লাসিক ডিজেল সাইকেলের পরিচালন প্যারামিটারগুলোকে নিয়ন্ত্রণ করে যেখানে স্থির চাপে তাপ সংযোজন ঘটে।"
+},
+{
+    q: "Q17. During the standardized decommissioning and dismantling sequence of a diesel engine from an automotive vehicle chassis, which step must be executed immediately after parking on a level surface?<br>একটি অটোমোটিভ যানবাহনের চ্যাসিস থেকে ডিজেল ইঞ্জিন অপসারণের আদর্শ সিকোয়েন্সের সময়, সমতল স্থানে পার্ক করার পরপরই কোন পদক্ষেপটি সম্পাদন করতে হবে?",
+    options: ["(A) Decoupling the propeller shaft from the transmission output / ট্রান্সমিশন আউটপুট থেকে প্রপেলার শ্যাফট বিচ্ছিন্ন করা", "(B) Choking all four vehicle wheels with wooden blocks / গাড়ির চারটি চাকার নিচে কাঠের ব্লক দিয়ে আটকানো", "(C) Evacuating the liquid coolant from the radiator core / রেডিয়েটর কোর থেকে তরল কুল্যান্ট বের করা", "(D) Extracting the dipstick to prevent oil contamination / তেলের দূষণ রোধ করতে ডিপস্টিক খুলে ফেলা"],
+    ans: 1,
+    sol: "For optimal workshop safety guidelines, the primary mechanical step in vehicle dismantling after parking on a level surface is choking all four wheels with wooden blocks.<br>ওয়ার্কশপের সর্বোত্তম নিরাপত্তা নির্দেশিকাগুলির জন্য, সমতল স্থানে পার্ক করার পরে যানবাহন বিচ্ছিন্ন করার প্রাথমিক যান্ত্রিক পদক্ষেপ হলো কাঠের ব্লক দিয়ে চারটি চাকা আটকে দেওয়া।"
+},
+{
+    q: "Q18. A driver operating a vehicle on a highway notices a flashing dashboard warning light that resembles a twisted heating coil wire. This specific alert communicates that:<br>হাইওয়েতে গাড়ি চালানোর সময় একজন চালক একটি ঝলমলে ড্যাশবোর্ড সতর্কবার্তা আলো লক্ষ্য করেন যা একটি পেঁচানো হিটিং কয়েল তারের মতো দেখায়। এই নির্দিষ্ট অ্যালার্টটি জানায় যে:",
+    options: ["(A) The electronic power steering motor has completely overheated / ইলেকট্রনিক পাওয়ার স্টিয়ারিং মোটরটি সম্পূর্ণ অতিরিক্ত গরম হয়ে গেছে", "(B) The anti-lock braking system hydraulic circuit has failed / অ্যান্টি-লক ব্রেকিং সিস্টেমের হাইড্রোলিক সার্কিট ব্যর্থ হয়েছে", "(C) There is a potential malfunction involving busted glow plugs or associated emission sensors / নষ্ট গ্লো প্লাগ বা সম্পর্কিত নির্গমন সেন্সর জড়িত একটি সম্ভাব্য ত্রুটি রয়েছে", "(D) All of the Above / উপরের সবকটি"],
+    ans: 2,
+    sol: "A flashing glow plug dashboard indicator light communicates a potential fault involving busted glow plugs or associated fuel injectors and exhaust gas recirculation systems.<br>একটি ব্লিংকিং গ্লো প্লাগ ড্যাশবোর্ড নির্দেশক আলো নষ্ট গ্লো প্লাগ বা সম্পর্কিত ফুয়েল ইনজেক্টর এবং এক্সহস্ট গ্যাস রিসার্কুলেশন সিস্টেমের সাথে জড়িত একটি সম্ভাব্য ত্রুটি নির্দেশ করে।"
+},
+{
+    q: "Q19. What is the fundamental functional differentiation between a Compression Ignition (CI) engine and a Spark Ignition (SI) engine regarding the charge drawn in during the suction stroke?<br>সাকশন স্ট্রোকের সময় সিলিন্ডারে প্রবেশ করা চার্জের ক্ষেত্রে একটি কম্প্রেশন ইগনিশন (CI) ইঞ্জিন এবং একটি স্পার্ক ইগনিশন (SI) ইঞ্জিনের মধ্যে মৌলিক কার্যকরী পার্থক্য কী?",
+    options: ["(A) CI engines suck an air-fuel mixture, while SI engines suck air alone / CI ইঞ্জিন বায়ু-জ্বালানির মিশ্রণ টানে, যেখানে SI ইঞ্জিন শুধু বায়ু টানে", "(B) CI engines suck pure air alone, while SI engines suck a metered air-fuel mixture / CI ইঞ্জিন শুধু বিশুদ্ধ বায়ু টানে, যেখানে SI ইঞ্জিন একটি পরিমাপকৃত বায়ু-জ্বালানির মিশ্রণ টানে", "(C) Both engines intake identical stoichiometric homogeneous mixtures / উভয় ইঞ্জিনই অভিন্ন স্টোটিওমেট্রিক সমসত্ব মিশ্রণ গ্রহণ করে", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 1,
+    sol: "During the suction stroke, a CI engine draws only atmospheric air into the cylinder, whereas an SI engine draws a homogeneous air-fuel mixture metered by a carburetor or port injectors.<br>সাকশন স্ট্রোকের সময়, একটি CI ইঞ্জিন সিলিন্ডারে কেবল বায়ুমণ্ডলীয় বায়ু টানে, যেখানে একটি SI ইঞ্জিন কার্বুরেটর বা পোর্ট ইনজেক্টর দ্বারা পরিমাপকৃত একটি সমসত্ব বায়ু-জ্বালানির মিশ্রণ টানে।"
+},
+{
+    q: "Q20. In an engine performance test, Brake Horsepower (BHP) is calculated using the torque and rotational speed of the crankshaft. What is the explicit mathematical representation of BHP in the metric system?<br>একটি ইঞ্জিনের পারফরম্যান্স টেস্টে, ক্র্যাঙ্কশ্যাফ্টের টর্ক এবং ঘূর্ণন গতি ব্যবহার করে ব্রেক হর্সপাওয়ার (BHP) গণনা করা হয়। মেট্রিক পদ্ধতিতে BHP-এর স্পষ্ট গাণিতিক প্রকাশ কোনটি?",
+    options: ["(A) BHP = (PLAN / 4500) * K", "(B) BHP = (2 * pi * N * T) / 4500", "(C) BHP = IHP + FHP", "(D) BHP = (Force * Distance) / Time"],
+    ans: 1,
+    sol: "Brake Horsepower (BHP) available at the engine flywheel is calculated explicitly in metric configurations through the classical mechanical expression BHP = (2 * pi * N * T) / 4500.<br>ইঞ্জিন ফ্লাইহুইলে উপলব্ধ ব্রেক হর্সপাওয়ার (BHP) মেট্রিক কনফিগারেশনে ধ্রুপদী যান্ত্রিক সমীকরণ BHP = (2 * pi * N * T) / 4500-এর মাধ্যমে স্পষ্টভাবে গণনা করা হয়।"
+},
+{
+    q: "Q21. Under what operational conditions does a dashboard Electronic Power Steering (EPS) indicator symbol typically light up to alert the operator?<br>কোন অপারেশনাল অবস্থার অধীনে একটি ড্যাশবোর্ড ইলেকট্রনিক পাওয়ার স্টিয়ারিং (EPS) নির্দেশক প্রতীক সাধারণত অপারেটরকে সতর্ক করার জন্য জ্বলে ওঠে?",
+    options: ["(A) Temporary overheating of the electric assist motor due to violent wheel sawing / স্টিয়ারিং হুইল খুব জোরে বা দ্রুত ঘোরানোর কারণে ইলেকট্রিক অ্যাসিস্ট মোটরের সাময়িক অতিরিক্ত গরম হওয়া", "(B) A major structural or electronic fault within the EPS circuit / EPS সার্কিটের মধ্যে একটি বড় কাঠামোগত বা ইলেকট্রনিক ত্রুটি", "(C) Complete loss of steering assistance power / স্টিয়ারিং অ্যাসিস্ট্যান্স পাওয়ার সম্পূর্ণ নষ্ট হওয়া", "(D) All of the Above / উপরের সবকটি"],
+    ans: 3,
+    sol: "The Electronic Power Steering (EPS) fault indicator triggers due to temporary assist motor overheating from aggressive wheel cutting, major electrical loop issues, or complete support power loss.<br>ইলেকট্রনিক পাওয়ার Steering (EPS) ত্রুটি নির্দেশকটি স্টিয়ারিং হুইল অতিরিক্ত জোরে ঘোরানোর কারণে সাময়িক অ্যাসিস্ট মোটর অতিরিক্ত গরম হওয়া, বড় বৈদ্যুতিক লুপ সমস্যা বা সম্পূর্ণ সাপোর্ট পাওয়ার নষ্ট হওয়ার কারণে ট্রিগার হয়।"
+},
+{
+    q: "Q22. Consider the operational mechanism of a Balancing Coil Type Oil Pressure Gauge system:<br>Statement I: An increase in engine lubricating oil pressure forces the internal engine unit diaphragm outward, which increases electrical resistance.<br>Statement II: The increased resistance causes the left-hand coil of the dash indicator unit to become magnetically stronger than the right-hand coil.<br>একটি ব্যালান্সিং কয়েল টাইপ অয়েল প্রেসার গেজ সিস্টেমের পরিচালন প্রক্রিয়া বিবেচনা করুন:<br>বিবৃতি I: ইঞ্জিনের লুব্রিকেটিং অয়েলের চাপ বৃদ্ধি ইঞ্জিনের অভ্যন্তরীণ ইউনিটের ডায়াফ্রামকে বাইরের দিকে ঠেলে দেয়, যা বৈদ্যুতিক রেজিস্ট্যান্স বৃদ্ধি করে।<br>বিবৃতি II: বর্ধিত রেজিস্ট্যান্সের কারণে ড্যাশ নির্দেশক ইউনিটের বাম দিকের কয়েলটি ডান দিকের কয়েলের তুলনায় চৌম্বকীয়ভাবে বেশি শক্তিশালী হয়।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 0,
+    sol: "Statement I is correct since higher pressure moves the diaphragm out and increases resistance. Statement II is incorrect because this increased resistance strengthens the right-hand coil, not the left.<br>বিবৃতি I সঠিক কারণ উচ্চ চাপ ডায়াফ্রামকে বাইরের দিকে নিয়ে যায় এবং রেজিস্ট্যান্স বাড়ায়। বিবৃতি II ভুল কারণ এই বর্ধিত রেজিস্ট্যান্স ডান দিকের কয়েলকে শক্তিশালী করে, বাম দিকের কয়েলকে নয়।"
+},
+{
+    q: "Q23. In an Otto Cycle internal combustion engine, the phase corresponding to the introduction of an electric spark occurs at which explicit step of the thermodynamic process?<br>একটি অটো সাইকেল অভ্যন্তরীণ দহন ইঞ্জিনে, বৈদ্যুতিক স্পার্কের প্রবর্তনের সাথে সম্পর্কিত ধাপটি থার্মোডাইনামিক প্রক্রিয়ার কোন স্পষ্ট ধাপে ঘটে?",
+    options: ["(A) During isentropic compression from BDC to TDC (2-3) / BDC থেকে TDC-তে আইসেন্ট্রোপিক কম্প্রেশনের সময় (২-৩)", "(B) Heat addition at constant volume condition (3-4) / স্থির আয়তন অবস্থায় তাপ যোগ করার সময় (৩-৪)", "(C) Gas expansion during the work stroke (4-5) / ওয়ার্ক স্ট্রোকের সময় গ্যাসের প্রসারণের সময় (৪-৫)", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 1,
+    sol: "In an Otto Cycle diagram, segment 3-4 represents the process where the air-fuel mixture is formally ignited by introducing an electric spark at a constant volume.<br>একটি অটো সাইকেল ডায়াগ্রামে, ৩-৪ অংশটি সেই প্রক্রিয়াটিকে প্রতিনিধিত্ব করে যেখানে স্থির আয়তনে একটি বৈদ্যুতিক স্পার্ক প্রবর্তনের মাধ্যমে এয়ার-ফুয়েল মিশ্রণটি আনুষ্ঠানিকভাবে প্রজ্জ্বলিত হয়।"
+},
+{
+    q: "Q24. In a four-stroke internal combustion engine, the mechanical phenomenon known as \"Inlet Valve Lag\" is engineered explicitly to achieve which physical consequence?<br>একটি চার-স্ট্রোক অভ্যন্তরীণ দহন ইঞ্জিনে, \"ইনলেট ভালভ ল্যাগ\" নামক যান্ত্রিক প্রক্রিয়াটি কোন ভৌত ফলাফল অর্জনের জন্য স্পষ্টভাবে ডিজাইন করা হয়েছে?",
+    options: ["(A) To open the inlet valve before TDC to clean the cylinder / সিলিন্ডার পরিষ্কার করার জন্য TDC-এর আগে ইনলেট ভালভ খোলা", "(B) To close the inlet valve after BDC to maximize volumetric efficiency via inertia charge / জড়তা চার্জের মাধ্যমে ভলিউমেট্রিক এফিসিয়েন্সি সর্বাধিক করতে BDC-এর পরে ইনলেট ভালভ বন্ধ করা", "(C) To close the exhaust valve prematurely to retain hot residual gases / গরম অবশিষ্ট গ্যাস ধরে রাখার জন্য এক্সহস্ট ভালভ সময়ের আগেই বন্ধ করা", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 1,
+    sol: "Inlet Valve Lag means making the inlet valve close a certain number of degrees after BDC, which utilizes intake momentum to pack more air-fuel charge into the cylinder, maximizing volumetric efficiency.<br>ইনলেট ভালভ ল্যাগ মানে ইনলেট ভালভটিকে BDC-এর নির্দিষ্ট কিছু ডিগ্রি পরে বন্ধ করা, যা সিলিন্ডারে আরও বেশি এয়ার-ফুয়েল চার্জ প্রবেশ করাতে ইনটেক মোメントাম ব্যবহার করে ভলিউমেট্রিক এফিসিয়েন্সি সর্বাধিক করে।"
+},
+{
+    q: "Q25. Which of the following parameters specifies the definitive sequence in which the individual power strokes occur within the respective cylinders of a multi-cylinder automotive engine?<br>নিচের কোন প্যারামিটারটি একটি মাল্টি-সিলিন্ডার অটোমোটিভ ইঞ্জিনের নিজ নিজ সিলিন্ডারের ভিতরে পাওয়ার স্ট্রোকগুলো ঘটার সুনির্দিষ্ট ক্রম নির্দেশ করে?",
+    options: ["(A) Firing order / ফায়ারিং অর্ডার", "(B) Crank throw configuration / ক্র্যাঙ্ক থ্রো কনফিগারেশন", "(C) Cylinder layout timing / সিলিন্ডার লেআউট টাইমিং", "(D) Valve overlap sequence / ভালভ ওভারল্যাপ সিকোয়েন্স"],
+    ans: 0,
+    sol: "Firing order is technically defined as the definitive sequence in which the individual combustion power strokes take place sequentially inside the respective cylinders of a multi-cylinder engine.<br>固定 ফায়ারিং অর্ডার প্রযুক্তিগতভাবে এমন একটি সুনির্দিষ্ট ক্রম হিসাবে সংজ্ঞায়িত করা হয় যার মধ্যে পৃথক দহন পাওয়ার স্ট্রোকগুলো একটি মাল্টি-সিলিন্ডার ইঞ্জিনের নিজ নিজ সিলিন্ডারের ভিতরে ধারাবাহিকভাবে ঘটে।"
+},
+{
+    q: "Q26. A vehicle dashboard warning display shows a symbol of a circular brake shoe layout enclosing an exclamation point. According to automotive technical standards, this light can indicate which group of issues?<br>একটি canবাহনের ড্যাশবোর্ড সতর্কবার্তা ডিসপ্লেতে একটি বিস্ময়সূচক চিহ্ন সংবলিত বৃত্তাকার ব্রেক শু লেআউটের প্রতীক দেখা যায়। অটোমোটিভ প্রযুক্তিগত মান অনুযায়ী, এই আলোটি কোন সমস্যাগুলো নির্দেশ করতে পারে?",
+    options: ["(A) Low brake fluid level or mismatched hydraulic pressure between circuits / ব্রেক ফ্লুইডের নিম্ন মাত্রা বা সার্কিটগুলোর মধ্যে হাইড্রোলিক চাপের অমিল", "(B) Vehicle parking brake is engaged or parking brake sensor is out of alignment / গাড়ির পার্কিং ব্রেক যুক্ত আছে বা পার্কিং ব্রেক সেন্সরটি অ্যালাইনমেন্টের বাইরে আছে", "(C) Immediate risk of reduced or completely absent braking performance / ব্রেকিং পারফরম্যান্স হ্রাস বা সম্পূর্ণ অনুপস্থিত হওয়ার তাত্ক্ষণিক ঝুঁকি", "(D) All of the Above / উপরের সবকটি"],
+    ans: 3,
+    sol: "The generalized automotive brake warning light functions as a multi-alert symbol encompassing an engaged parking brake, misaligned sensors, low fluid level, or hydraulic balance mismatches.<br>সাধারণ অটোমোটিভ ব্রেক সতর্কীকরণ আলো একটি multi-alert প্রতীক হিসেবে কাজ করে যা একটি যুক্ত পার্কিং ব্রেক, মিসঅ্যালাইনড সেন্সর, নিম্ন ফ্লুইড লেভেল বা হাইড্রোলিক ভারসাম্যের অমিলকে অন্তর্ভুক্ত করে।"
+},
+{
+    q: "Q27. In the nomenclature of internal combustion engine mechanics, what is the precise dimensional relationship between the total piston stroke (L) and the crank throw radius (R)?<br>অভ্যন্তরীণ দহন ইঞ্জিন মেকানিক্সের পরিভাষায়, মোট পিস্টন স্ট্রোক (L) এবং ক্র্যাঙ্ক থ্রো ব্যাসার্ধ (R)-এর মধ্যে নিখুঁত মাত্রিক সম্পর্ক কী?",
+    options: ["(A) L = R", "(B) L = R / 2", "(C) L = 2R", "(D) L = 4R"],
+    ans: 2,
+    sol: "The technical design documentation states that the total linear piston stroke (L) is exactly double the structural crank throw radius (R), which yields the equation L = 2R.<br>প্রযুক্তিগত ডিজাইন নথিতে উল্লেখ আছে যে মোট রৈখিক পিস্টন স্ট্রোক (L) হলো কাঠামোগত ক্র্যাঙ্ক থ্রো ব্যাসার্ধ (R)-এর ঠিক দ্বিগুণ, যা L = 2R সমীকরণটি প্রদান করে।"
+},
+{
+    q: "Q28. What type of starting method is extensively utilized for heavy-duty earth-moving diesel engines, where an auxiliary combustion engine is manually or electrically started first to crank the main engine?<br>ভারী-ডিউটি আর্থ-মুভিং ডিজেল ইঞ্জিনের জন্য কোন ধরনের স্টার্টিং পদ্ধতি ব্যাপকভাবে ব্যবহৃত হয়, যেখানে মূল ইঞ্জিনটি ঘোরাতে প্রথমে একটি সহায়ক দহন ইঞ্জিন ম্যানুয়ালি বা বৈদ্যুতিকভাবে চালু করা হয়?",
+    options: ["(A) Hydraulic cranking motor mechanism / হাইড্রোলিক ক্র্যাঙ্কিং মোটর প্রক্রিয়া", "(B) Compressed air reservoir insertion / সংকুচিত বায়ু রিজার্ভার প্রবেশ করানো", "(C) Gasoline engine starting / পেট্রোল ইঞ্জিনের মাধ্যমে চালু করা (Gasoline engine starting)", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 2,
+    sol: "Gasoline engine starting is explicitly documented as a starting configuration utilized for heavy-duty earth-moving equipment, where a small gasoline engine cranks the main large diesel engine.<br>পেট্রোল ইঞ্জিনের মাধ্যমে চালু করা (Gasoline engine starting) পদ্ধতিটি ভারী-ডিউটি আর্থ-মুভিং ইক্যুইপমেন্টের জন্য ব্যবহৃত একটি স্টার্টিং কনফিগারেশন হিসাবে স্পষ্টভাবে নথিবদ্ধ, যেখানে একটি ছোট পেট্রোল ইঞ্জিন মূল বড় ডিজেল ইঞ্জিনটিকে ঘোরায়।"
+},
+{
+    q: "Q29. Consider the thermodynamic and structural parameters of Spark Ignition (SI) and Compression Ignition (CI) engines:<br>Statement I: The maximum standard compression ratio for an SI engine is engineered up to 24:1, whereas a CI engine is restricted to 10:1.<br>Statement II: The compression pressure inside a CI engine cylinder reaches between 400 to 550 PSI, which is significantly higher than an SI engine.<br>স্পার্ক ইগনিশন (SI) এবং কম্প্রেশন ইগনিশন (CI) ইঞ্জিনের থার্মোডাইনামিক এবং কাঠামোগত প্যারামিটার বিবেচনা করুন:<br>বিবৃতি I: একটি SI ইঞ্জিনের জন্য সর্বোচ্চ আদর্শ কম্প্রেশন রেশিও ২৪:১ পর্যন্ত ডিজাইন করা হয়, যেখানে একটি CI ইঞ্জিন ১০:১ এ সীমাবদ্ধ থাকে।<br>বিবৃতি II: একটি CI ইঞ্জিন সিলিন্ডারের ভিতরে কম্প্রেশন চাপ ৪০০ থেকে ৫৫০ PSI-এ পৌঁছায়, যা একটি SI ইঞ্জিনের চেয়ে উল্লেখযোগ্যভাবে বেশি।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 1,
+    sol: "Statement I is incorrect because the high compression ratio (up to 24:1) belongs to CI (diesel) engines, and the lower ratio (max 10:1) belongs to SI (petrol) engines. Statement II is correct.<br>বিবৃতি I ভুল কারণ উচ্চ কম্প্রেশন রেশিও (২৪:১ পর্যন্ত) CI (ডিজেল) ইঞ্জিনের এবং নিম্ন রেশিও (সর্বোচ্চ ১০:১) SI (পেট্রোল) ইঞ্জিনের। বিবৃতি II সঠিক।"
+},
+{
+    q: "Q30. In a balancing coil type temperature gauge system, what happens to the electrical resistance of the engine sensing unit when the engine coolant temperature decreases?<br>একটি ব্যালান্সিং কয়েল টাইপ তাপমাত্রা গেজ সিস্টেমে, ইঞ্জিনের কুল্যান্টের তাপমাত্রা কমে গেলে ইঞ্জিন সেন্সিং ইউনিটের বৈদ্যুতিক রেজিস্ট্যান্সের কী পরিবর্তন ঘটে?",
+    options: ["(A) The electrical resistance decreases proportionally / বৈদ্যুতিক রেজিস্ট্যান্স আনুপাতিকভাবে হ্রাস পায়", "(B) The electrical resistance increases / বৈদ্যুতিক রেজিস্ট্যান্স বৃদ্ধি পায়", "(C) The electrical resistance drops abruptly to zero ohms / বৈদ্যুতিক রেজিস্ট্যান্স আকস্মিকভাবে শূন্য ওহমে নেমে যায়", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 1,
+    sol: "The temperature sensor unit is engineered out of a thermal-resistive pellet whose fundamental electrical resistance increases as the coolant fluid temperature drops.<br>তাপমাত্রা সেন্সর ইউনিটটি একটি থার্মাল-রেজিস্টিভ পেলেট দিয়ে তৈরি যার মৌলিক বৈদ্যুতিক রেজিস্ট্যান্স কুল্যান্ট তরলের তাপমাত্রা কমে যাওয়ার সাথে সাথে বৃদ্ধি পায়।"
+},
+{
+    q: "Q31. Which of the following instruments is explicitly engineered to track and visually display the instantaneous distance traveled by an automotive vehicle, and can function electronically or mechanically?<br>নিচের কোন যন্ত্রটি একটি স্বয়ংক্রিয় যান দ্বারা অতিক্রান্ত তাৎক্ষণিক দূরত্ব ট্র্যাক এবং দৃশ্যমানভাবে প্রদর্শন করার জন্য স্পষ্টভাবে ডিজাইন করা হয়েছে এবং এটি ইলেকট্রনিক বা যান্ত্রিকভাবে কাজ করতে পারে?",
+    options: ["(A) Speedometer / স্পিডোমিটার", "(B) Odometer / ওডোমিটার", "(C) Tachometer / ট্যাকোমিটার", "(D) Inclinometer / ইনক্লিনোমিটার"],
+    ans: 1,
+    sol: "An odometer is defined as the definitive automotive dashboard gauge dedicated to calculating and displaying the instantaneous distance traveled by a vehicle in kilometers.<br>একটি ওডোমিটারকে অটোমোবাইল ড্যাশবোর্ডের সুনির্দিষ্ট গেজ হিসাবে সংজ্ঞায়িত করা হয় যা একটি যানবাহনের দ্বারা অতিক্রান্ত তাৎক্ষণিক দূরত্ব কিলোমিটারে গণনা এবং প্রদর্শন করার জন্য নিবেদিত।"
+},
+{
+    q: "Q32. In a two-stroke Compression Ignition (CI) engine cycle, what specific mechanical component delivers pure atmospheric air under pressure into the cylinder through the scavenging ports when the piston reaches Bottom Dead Centre (BDC)?<br>একটি দুই-স্ট্রোক কম্প্রেশন ইগনিশন (CI) ইঞ্জিন সাইকেলে, পিস্টন যখন বটম ডেড সেন্টার (BDC)-এ পৌঁছায়, তখন কোন নির্দিষ্ট যান্ত্রিক উপাদানটি স্ক্যাভেঞ্জিং পোর্টের মাধ্যমে সিলিন্ডারে চাপের অধীনে বিশুদ্ধ বায়ুমণ্ডলীয় বায়ু সরবরাহ করে?",
+    options: ["(A) High-pressure common rail injector / উচ্চ-চাপের কমন রেল ইনজেক্টর", "(B) Roots Blower / রুটস ব্লোয়ার (Root blower)", "(C) Exhaust gas recirculation assembly / এক্সহস্ট গ্যাস রিসার্কুলেশন অ্যাসেম্বলি", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 1,
+    sol: "Two-stroke diesel engine functional layouts integrate a dedicated mechanical Roots Blower to force clean atmospheric air under pressure through the scavenging ports.<br>দুই-স্ট্রোক ডিজেল ইঞ্জিনের কার্যকরী লেআউটে স্ক্যাভেঞ্জিং পোর্টের মাধ্যমে চাপের অধীনে পরিষ্কার বায়ুমণ্ডলীয় বায়ু প্রবেশ করাতে একটি ডেডিকেটেড যান্ত্রিক রুটস ব্লোয়ার (Roots Blower) একীভূত থাকে।"
+},
+{
+    q: "Q33. A technician records a four-stroke petrol engine's parameters and notes that the inlet valve remains open for a total period of:<br>একজন টেকনিশিয়ান একটি চার-স্ট্রোক পেট্রোল ইঞ্জিনের প্যারামিটার রেকর্ড করেন এবং নোট করেন যে ইনলেট ভালভটি মোট কত সময়কাল খোলা থাকে?",
+    options: ["(A) Exactly 180° of crankshaft rotation / ক্র্যাঙ্কশ্যাফ্ট ঘূর্ণনের ঠিক ১৮০°", "(B) Exactly 360° of crankshaft rotation / ক্র্যাঙ্কশ্যাফ্ট ঘূর্ণনের ঠিক ৩৬০°", "(C) Exactly 230° of crankshaft rotation / ক্র্যাঙ্কশ্যাফ্ট ঘূর্ণনের মোট ২৩০°", "(D) Exactly 90° of crankshaft rotation / ক্র্যাঙ্কশ্যাফ্ট ঘূর্ণনের ঠিক ৯০°"],
+    ans: 2,
+    sol: "According to standard internal combustion design particulars, the inlet valve of a four-stroke internal combustion engine remains open for a total structural period of 230°.<br>আদ্যন্ত অভ্যন্তরীণ দহন ডিজাইন অনুসারে, একটি চার-স্ট্রোক অভ্যন্তরীণ দহন ইঞ্জিনের ইনলেট ভালভ মোট ২৩০° কাঠামোগত সময়কালের জন্য খোলা থাকে।"
+},
+{
+    q: "Q34. What is the explicit functional drawback associated with traditional Direct Fuel Injection systems that is minimized by routing fuel through indirect port fuel injection layouts?<br>ঐতিহ্যবাহী ডাইরেক্ট ফুয়েল ইনজেকশন সিস্টেমের সাথে সম্পর্কিত স্পষ্ট কার্যকরী ত্রুটি কী যা ইনডাইরেক্ট পোর্ট ফুয়েল ইনজেকশন লেআউটের মাধ্যমে জ্বালানি প্রেরণের দ্বারা হ্রাস পায়?",
+    options: ["(A) Complete structural failure of the engine block /  ইঞ্জিন ব্লকের সম্পূর্ণ কাঠামোগত ব্যর্থতা", "(B) Accumulation of solid carbon crusts on the intake valves due to lack of fuel contact washing / জ্বালানির সংস্পর্শে ধৌত না হওয়ার কারণে ইনটেক ভালভে কঠিন কার্বন আস্তরণ জমা হওয়া", "(C) Excessive reduction in high-load engine speed stability / উচ্চ-লোড ইঞ্জিন গতির স্থায়িত্ব অতিরিক্ত হ্রাস পাওয়া", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 1,
+    sol: "Traditional direct injection models prevent fuel from washing the intake valves. Port or indirect injection delivers a continuous fuel spray onto the valves, which actively deters carbon crust build-up.<br>ঐতিহ্যবাহী ডাইরেক্ট ইনজেকশন মডেলগুলো জ্বালানি দ্বারা ইনটেক ভালভ ধৌত হতে বাধা দেয়। পোর্ট বা ইনডাইরেক্ট ইনজেকশন ভালভের ওপর একটি অবিচ্ছিন্ন জ্বালানি স্প্রে সরবরাহ করে, যা সক্রিয়ভাবে কার্বন আস্তরণ তৈরি হওয়া রোধ করে।"
+},
+{
+    q: "Q35. Consider the operating environment and material specifications of internal combustion engine valves:<br>Statement I: Engine valves are exposed to complex chemical, mechanical, and thermal stresses during high-speed operations.<br>Statement II: Small engine valves are systematically classified into design types including one-piece, projection-tip welded, or two-piece stem welded valves.<br>অভ্যন্তরীণ দহন ইঞ্জিনের ভালভগুলোর অপারেটিং পরিবেশ এবং উপাদানের স্পেসিফিকেশন বিবেচনা করুন:<br>বিবৃতি I: উচ্চ-গতির অপারেশনের সময় ইঞ্জিনের ভালভগুলো জটিল রাসায়নিক, যান্ত্রিক এবং তাপীয় চাপের সংস্পর্শে আসে।<br>বিবৃতি II: ছোট ইঞ্জিনের ভালভগুলোকে পদ্ধতিগতভাবে ওয়ান-পিস, প্রজেকশন-টিপ ওয়েল্ডেড বা টু-পিস স্টেম ওয়েল্ডেড ভালভসহ বিভিন্ন ডিজাইনে শ্রেণীবদ্ধ করা হয়।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 2,
+    sol: "Both statements follow directly from text definitions. Engine valves encounter heavy chemical, mechanical, and thermal parameters and are categorized as one-piece, projection-tip, or two-piece stem welded types.<br>উভয় বিবৃতি পাঠ্যের সংজ্ঞা থেকে সরাসরি নেওয়া হয়েছে। ইঞ্জিনের ভালভগুলো ভারী রাসায়নিক, যান্ত্রিক এবং তাপীয় প্যারামিটারের সম্মুখীন হয় এবং এগুলো ওয়ান-পিস, প্রজেকশন-টিপ বা টু-পিস স্টেম ওয়েল্ডেড টাইপ হিসাবে শ্রেণীবদ্ধ করা হয়।"
+},
+{
+    q: "Q36. What is the absolute limit of thermal efficiency typically achieved by a well-optimized modern four-stroke cycle diesel internal combustion engine according to technical documentation?<br>প্রযুক্তিগত নথি অনুসারে একটি সু-অপ্টিমাইজড আধুনিক চার-স্ট্রোক সাইকেল ডিজেল অভ্যন্তরীণ দহন ইঞ্জিন দ্বারা সাধারণত কত সর্বোচ্চ তাপীয় দক্ষতা (thermal efficiency) অর্জিত হয়?",
+    options: ["(A) Approximately 24% / প্রায় ২৪%", "(B) Approximately 40% / প্রায় ৪০%", "(C) Approximately 80% / প্রায় ৮০%", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 1,
+    sol: "Well-optimized classic four-stroke diesel compression-ignition engines consistently achieve an elevated thermal efficiency profile reaching up to 40% in standardized trials.<br>Operating a standard four-stroke diesel system tracks smoothly inside optimized testing limits to clear high output scales.<br>সু-অপ্টিমাইজড ক্লাসিক চার-স্ট্রোক ডিজেল কম্প্রেশন-ইগনিশন ইঞ্জিনগুলো প্রমিত পরীক্ষায় ক্রমাগত ৪০% পর্যন্ত একটি উচ্চ তাপীয় দক্ষতা প্রোফাইল অর্জন করে।"
+},
+{
+    q: "Q37. During the operation of an automatic transmission vehicle under heavy towing conditions, an amber warning light illuminating a gearwheel housing template indicates that:<br>ভারী টোয়িং (towing) অবস্থায় একটি স্বয়ংক্রিয় ট্রান্সমিশন যান পরিচালনার সময়, একটি গিয়ারহুইল হাউজিং টেমপ্লেট নির্দেশকারী অ্যাম্বার সতর্কতার আলো জ্বলে উঠলে তা কী বোঝায়?",
+    options: ["(A) The engine oil pressure has fallen below 90 PSI / ইঞ্জিনের তেল চাপ ৯০ PSI-এর নিচে নেমে গেছে", "(B) The transmission assembly or its operational fluid is overheating / ট্রান্সমিশন অ্যাসেম্বলি বা এর অপারেটিং ফ্লুইড অতিরিক্ত গরম হয়ে যাচ্ছে", "(C) The center differential lock has experienced structural failure / সেন্টার ডিফারেনশিয়াল লকটি কাঠামোগত ব্যর্থতার সম্মুখীন হয়েছে", "(D) The fuel injection pump has lost mechanical timing / ফুয়েল ইনজেকশন পাম্প তার যান্ত্রিক টাইমিং হারিয়েছে"],
+    ans: 1,
+    sol: "Transmission warning displays illuminate on dashboard layouts during extreme hauling profiles to indicate that the automatic gearbox internal operational fluid is overheating.<br>অতিরিক্ত ভারী বোঝা বহন করার সময় ড্যাশবোর্ড লেআউটে ট্রান্সমিশন সতর্কবার্তা ডিসপ্লে জ্বলে ওঠে যা নির্দেশ করে যে স্বয়ংক্রিয় গিয়ারবক্সের অভ্যন্তরীণ অপারেটিং ফ্লুইড অতিরিক্ত গরম হয়ে যাচ্ছে।"
+},
+{
+    q: "Q38. In the mechanical configuration of a V-type internal combustion engine, what are the primary spatial and component advantages obtained over an equivalent in-line engine configuration?<br>একটি V-টাইপ অভ্যন্তরীণ দহন ইঞ্জিনের যান্ত্রিক কনফিগারেশনে, একটি সমতুল্য ইন-লাইন ইঞ্জিন কনফিগারেশনের তুলনায় কোন প্রাথমিক স্থানিক এবং উপাদানগত সুবিধাগুলো পাওয়া যায়?",
+    options: ["(A) Longer crankshaft configuration and increased engine profile height / দীর্ঘতর ক্র্যাঙ্কশ্যাফ্ট কনফিগারেশন এবং ইঞ্জিনের প্রোফাইল উচ্চতা বৃদ্ধি", "(B) Shorter crankshaft length for multi-cylinder layouts and a more compact, lower engine height / বহু-সিলিন্ডার লেআউটের জন্য খাটো ক্র্যাঙ্কশ্যাফ্ট দৈর্ঘ্য এবং আরও কমপ্যাক্ট, কম ইঞ্জিন উচ্চতা", "(C) Elimination of all structural balancing requirements and lower combustion pressures / সমস্ত কাঠামোগত ভারসাম্যের প্রয়োজনীয়তা দূরীকরণ এবং কম দহন চাপ", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 1,
+    sol: "V-type engines compress their cylinder layout structure, creating a lower overall profile height and a drastically shorter crankshaft footprint compared to an inline layout with identical cylinder volume.<br>V-টাইপ ইঞ্জিনগুলো তাদের সিলিন্ডার লেআউট কাঠামোকে কমপ্যাক্ট করে, যা অভিন্ন সিলিন্ডার আয়তনের ইনলাইন লেআউটের তুলনায় একটি কম সামগ্রিক প্রোফাইল উচ্চতা এবং একটি মারাত্মকভাবে খাটো ক্র্যাঙ্কশ্যাফট ফুটপ্রিন্ট তৈরি করে।"
+},
+{
+    q: "Q39. What type of engine starting mechanism utilizes compressed hydraulic fluid stored in an accumulator to drive a dedicated cranking motor to rotate the engine flywheel?<br>কোন ধরনের ইঞ্জিন স্টার্টিং প্রক্রিয়া ইঞ্জিনের ফ্লাইহুইল ঘোরাতে একটি ডেডিকেটেড ক্র্যাঙ্কিং মোটর চালানোর জন্য অ্যাকিউমুলেটরে সঞ্চিত সংকুচিত হাইড্রোলিক তরল ব্যবহার করে?",
+    options: ["(A) Compressed air pneumatic cranking system / সংকুচিত বায়ু নিউমেটিক ক্র্যাঙ্কিং সিস্টেম", "(B) Hydraulic cranking motor configuration / হাইড্রোলিক ক্র্যাঙ্কিং মোটর কনফিগারেশন (Hydraulic cranking motors)", "(C) Electric motor starter solenoid assembly / ইলেকট্রিক মোটর স্টার্টার সোলেনয়েড অ্যাসেম্বলি", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 1,
+    sol: "Hydraulic cranking motor starter networks rely on high-pressure hydraulic fluid accumulated inside a containment vessel to rotate the engine flywheel via a control valve.<br>হাইড্রোলিক ক্র্যাঙ্কিং মোটর স্টার্টার নেটওয়ার্কগুলো একটি কন্ট্রোল ভালভের মাধ্যমে ইঞ্জিনের ফ্লাইহুইল ঘোরাতে একটি কন্টেনমেন্ট ভেসেলের ভিতরে সঞ্চিত উচ্চ-চাপের হাইড্রোলিক তরলের ওপর নির্ভর করে।"
+},
+{
+    q: "Q40. Consider the definitive engineering steps for the breakdown of an automotive internal combustion engine system:<br>Statement I: The radiator assembly should be carefully removed prior to extracting the engine mounting brackets to prevent core damage.<br>Statement II: The exhaust pipe interface must be left uncovered to allow internal structural ventilation during engine removal.<br>একটি অটোমোটিভ অভ্যন্তরীণ দহন ইঞ্জিন সিস্টেম বিচ্ছিন্নকরণের সুনির্দিষ্ট ইঞ্জিনিয়ারিং পদক্ষেপগুলো বিবেচনা করুন:<br>বিবৃতি I: কোর ক্ষতি রোধ করতে ইঞ্জিন মাউন্টিং ব্র্যাকেটগুলো অপসারণের আগে রেডিয়েটর অ্যাসেম্বলিটি সাবধানে সরিয়ে ফেলা উচিত।<br>বিবৃতি II: ইঞ্জিন অপসারণের সময় অভ্যন্তরীণ কাঠামোগত বায়ুচলাচলের অনুমতি দেওয়ার জন্য এক্সহস্ট পাইপের মুখটি অবশ্যই খোলা রাখতে হবে।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 0,
+    sol: "Statement I is correct; the radiator must be decoupled safely early in the extraction sequence to prevent core damage. Statement II is incorrect; the open exhaust pipe manifold must be covered to bar foreign debris.<br>বিবৃতি I সঠিক; কোর ক্ষতি রোধ করতে ইঞ্জিন অপসারণের সিকোয়েন্সে শুরুতেই রেডিয়েটরটি নিরাপদে বিচ্ছিন্ন করা উচিত। বিবৃতি II ভুল; বিদেশী ময়লা আটকাতে খোলা এক্সহস্ট পাইপের মুখ অবশ্যই ঢেকে রাখতে হবে।"
+},
+{
+    q: "Q41. In an automotive engine diagnostic verification, the parameter calculated as the ratio of Brake Horsepower (BHP) to Indicated Horsepower (IHP) expressed as a percentage is designated as:<br>একটি অটোমোটিভ ইঞ্জিন ডায়াগনস্টিক ভেরিফিকেশনে, ব্রেক হর্সপাওয়ার (BHP) এবং ইন্ডিকেটেড হর্সপাওয়ার (IHP)-এর অনুপাতকে শতকরা হারে প্রকাশ করা প্যারামিটারটিকে বলা হয়:",
+    options: ["(A) The engine lubrication system oil level is critically low by approximately two liters / ইঞ্জিনের লুব্রিকেশন সিস্টেমের তেলের স্তর আশঙ্কাজনকভাবে প্রায় দুই লিটার কম রয়েছে", "(B) The vehicle brake pads have completely worn out / গাড়ির ব্রেক প্যাডগুলো সম্পূর্ণ ক্ষয় হয়ে গেছে", "(C) The automatic stability control system has engaged / স্বয়ংক্রিয় স্টেবিলিটি কন্ট্রোল সিস্টেম সক্রিয় হয়েছে", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 0,
+    sol: "An illuminated engine oil lamp dashboard warn status indicates that the baseline lubricating oil volume has depleted by approximately two liters and requires immediate topping off.<br>একটি আলোকিত ইঞ্জিন অয়েল ল্যাম্প ড্যাশবোর্ড সতর্কবার্তা নির্দেশ করে যে মূল লুব্রিকেটিং অয়েলের পরিমাণ প্রায় দুই লিটার কমে গেছে এবং অবিলম্বে তেল পূরণ করা প্রয়োজন।"
+},
+{
+    q: "Q42. In a four-stroke internal combustion engine, the operational parameter known as \"Exhaust Valve Lead\" is explicitly designed to execute which event?<br>একটি চার-স্ট্রোক অভ্যন্তরীণ দহন ইঞ্জিনে, \"এক্সহস্ট ভালভ লিড\" নামে পরিচিত অপারেশনাল প্যারামিটারটি বিশেষভাবে কোন ঘটনাটি সম্পাদনের জন্য ডিজাইন করা হয়েছে?",
+    options: ["(A) To open the exhaust valve early before BDC to allow optimal exhaust gas evacuation / অনুকূল এক্সহস্ট গ্যাস নিষ্কাশনের অনুমতি দেওয়ার জন্য BDC-এর আগে এক্সহস্ট ভালভটি সময়ের আগেই খোলা", "(B) To open the inlet valve after TDC to decrease volumetric efficiency / ভলিউমেট্রিক এফিসিয়েন্সি কমাতে TDC-এর পরে ইনলেট ভালভ খোলা", "(C) To close both valves simultaneously at the end of the suction stroke / সাকশন স্ট্রোকের শেষে একই সাথে উভয় ভালভ বন্ধ করা", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 0,
+    sol: "Exhaust Valve Lead is engineered to open the exhaust valves a designated number of degrees before BDC to allow internal gas pressures to vent, enabling cleaner evacuation of residual exhaust.<br>এক্সহস্ট ভালভ লিড ডিজাইন করা হয়েছে এক্সহস্ট ভালভগুলোকে BDC-এর একটি নির্দিষ্ট ডিগ্রি আগে খোলার জন্য যাতে অভ্যন্তরীণ গ্যাসের চাপ বের হয়ে যেতে পারে, যা অবশিষ্ট এক্সহস্টের আরও পরিচ্ছন্ন নিষ্কাশন সক্ষম করে।"
+},
+{
+    q: "Q43. Which type of engine design features cylinders arranged horizontally opposite each other, offering superior mechanical balance and smooth operation at very high speeds?<br>কোন ধরনের ইঞ্জিন ডিজাইনে সিলিন্ডারগুলো একে অপরের বিপরীতে অনুভূমিকভাবে সাজানো থাকে, যা চমৎকার যান্ত্রিক ভারসাম্য এবং খুব উচ্চ গতিতে মসৃণ অপারেশন প্রদান করে?",
+    options: ["(A) Radial engine /  রেডিয়াল ইঞ্জিন", "(B) In-line engine / ইন-লাইন ইঞ্জিন", "(C) Opposed engine / অপোজড ইঞ্জিন", "(D) V-engine / V-ইঞ্জিন"],
+    ans: 2,
+    sol: "Opposed engine structures place their cylinder rows horizontally opposite one another, maximizing natural component weight balance and permitting smooth high-speed performance output.<br>অপোজড ইঞ্জিন কাঠামোগুলো তাদের সিলিন্ডারের সারিগুলোকে একে অপরের বিপরীতে অনুভূমিকভাবে স্থাপন করে, যা উপাদানের স্বাভাবিক ওজনের ভারসাম্যকে সর্বাধিক করে এবং মসৃণ উচ্চ-কালের পারফরম্যান্স আউটপুটের অনুমতি দেয়।"
+},
+{
+    q: "Q44. What specific operational warning is triggered by a modern vehicle's Tire Pressure Monitoring System (TPMS) display panel if a tire suffers a severe drop in inflation?<br>একটি আধুনিক যানবাহনের টায়ার প্রেশার মনিটরিং সিস্টেম (TPMS) ডিসপ্লে প্যানেল দ্বারা কোন নির্দিষ্ট অপারেশনাল সতর্কবার্তা ট্রিগার হয় যদি একটি টায়ারের হাওয়ার চাপ গুরুতরভাবে হ্রাস পায়?",
+    options: ["(A) Immediate risk of tire overheating and structural highway blowout / ٹায়ার অতিরিক্ত গরম হওয়া এবং হাইওয়েতে ফেটে যাওয়ার তাত্ক্ষণিক ঝুঁকি", "(B) Drastic reduction in steering assistance response time / স্টিয়ারিং অ্যাসিস্ট্যান্স রেসপন্স টাইমে মারাত্মক হ্রাস", "(C) Sudden structural lock of the center differential assembly / সেন্টার ডিফারেনশিয়াল অ্যাসেম্বলির আকস্মিক কাঠামোগত লক", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 0,
+    sol: "A low inflation status flagged by the Tire Pressure Monitoring System indicates an increased highway blowout hazard caused by intense heat buildup and risk of heavy hydroplaning on wet tarmac.<br>টায়ার প্রেশার মনিটরিং সিস্টেম দ্বারা চিহ্নিত একটি কম হাওয়ার চাপ তীব্র তাপ বৃদ্ধির কারণে হাইওয়েতে চাকা ফেটে যাওয়ার ঝুঁকি এবং ভেজা রাস্তায় মারাত্মক হাইড্রোপ্ল্যানিংয়ের ঝুঁকি নির্দেশ করে।"
+},
+{
+    q: "Q45. Consider the structural configuration and mechanical attributes of single-cylinder internal combustion engines:<br>Statement I: A single-cylinder engine is structurally capable of developing extreme power outputs suitable for heavy utility vehicles.<br>Statement II: Single-cylinder engine units are typically restricted to light two-wheeled vehicles such as motor cycles and scooters.<br>সিঙ্গেল-সিলিন্ডার অভ্যন্তরীণ দহন ইঞ্জিনের কাঠামোগত কনফিগারেশন এবং যান্ত্রিক বৈশিষ্ট্য বিবেচনা করুন:<br>বিবৃতি I: একটি সিঙ্গেল-সিলিন্ডার ইঞ্জিন ভারী ইউটিলিটি যানবাহনের জন্য উপযুক্ত চরম শক্তি (power output) উৎপাদনে কাঠামোগতভাবে সক্ষম।<br>বিবৃতি II: সিঙ্গেল-সিলিন্ডার ইঞ্জিন ইউনিটগুলো সাধারণত হালকা দুই চাকার যান যেমন মোটর সাইকেল এবং স্কুটারে সীমাবদ্ধ থাকে।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 1,
+    sol: "Statement I is incorrect because single-cylinder configurations have strict output power limits. Statement II is correct; they are used in light two-wheel scooters and motorcycles.<br>বিবৃতি I ভুল কারণ সিঙ্গেল-সিলিন্ডার কনফিগারেশনের কঠোর আউটপুট পাওয়ার সীমাবদ্ধতা রয়েছে। বিবৃতি II সঠিক; এগুলো হালকা দুই চাকার স্কুটার এবং মোটরসাইকেলে ব্যবহৃত হয়।"
+},
+{
+    q: "Q46. In an automotive engine diagnostic verification, the parameter calculated as the ratio of Brake Horsepower (BHP) to Indicated Horsepower (IHP) expressed as a percentage is designated as:<br>একটি অটোমোটিভ ইঞ্জিন ডায়াগনস্টিক ভেরিফিকেশনে, ব্রেক হর্সপাওয়ার (BHP) এবং ইন্ডিকেটেড হর্সপাওয়ার (IHP)-এর অনুপাতকে শতকরা হারে প্রকাশ করা প্যারামিটারটিকে বলা হয়:",
+    options: ["(A) Thermal efficiency / তাপীয় দক্ষতা", "(B) Volumetric efficiency / ভলিউমেট্রিক এফিসিয়েন্সি", "(C) Mechanical efficiency / যান্ত্রিক দক্ষতা", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 2,
+    sol: "Mechanical efficiency is defined as the mathematical relationship and ratio between delivered Brake Horsepower (BHP) and total internal Indicated Horsepower (IHP), calculated as (BHP / IHP) * 100.<br>যান্ত্রিক দক্ষতা ব্রেক হর্সপাওয়ার (BHP) এবং মোট অভ্যন্তরীণ ইন্ডিকেটেড হর্সপাওয়ার (IHP)-এর মধ্যে গাণিতিক সম্পর্ক এবং অনুপাত হিসাবে সংজ্ঞায়িত করা হয়, যা (BHP / IHP) * 100 হিসাবে গণনা করা হয়।"
+},
+{
+    q: "Q47. During a vehicle check, the dashboard display indicates that the center differential lock light is active. Driving a part-time four-wheel-drive vehicle on dry tarmac under this condition poses a severe risk of:<br>যানবাহন পরীক্ষার সময়, ড্যাশবোর্ড ডিসপ্লে নির্দেশ করে যে সেন্টার ডিফারেনশিয়াল লক লাইটটি সক্রিয় রয়েছে। এই অবস্থায় শুকনো পিচ রাস্তার (dry tarmac) ওপর পার্ট-টাইম ফোর-হুইল-ড্রাইভ যান চালানো কোন মারাত্মক ঝুঁকি তৈরি করে?",
+    options: ["(A) Instantaneous depletion of the secondary battery bank / সেকেন্ডারি ব্যাটারি ব্যাংকের তাৎক্ষণিক ক্ষয়", "(B) Mechanical binding of the drivetrain lines and costly structural transmission damage / ড্রাইভট্রেন লাইনের যান্ত্রিক বাইন্ডিং (binding) এবং ব্যয়বহুল কাঠামোগত ট্রান্সমিশনের ক্ষতি", "(C) Extreme reduction in the engine cooling system's internal pressure / ইঞ্জিনের কুলিং系统ের অভ্যন্তরীণ চাপের চরম হ্রাস", "(D) None of the Above / উপরের কোনোটিই নয়"],
+    ans: 1,
+    sol: "Running a part-time 4WD layout on dry tarmac with the center differential locked causes mechanical binding, since wheels cannot slip, leading to high structural transmission stress and damage.<br>সেন্টর ডিফারেনশিয়াল লক থাকা অবস্থায় শুকনো পিচ রাস্তার ওপর পার্ট-টাইম 4WD লেআউট চালানো যান্ত্রিক বাইন্ডিং (binding) ঘটায়, যেহেতু চাকা পিছলে যেতে পারে না, যা উচ্চ কাঠামোগত ট্রান্সমিশন চাপ এবং ক্ষতির দিকে পরিচালিত করে।"
+},
+{
+    q: "Q48. In a four-stroke internal combustion engine cycle, what precise operational parameters specify the behavior of the inlet valve configuration according to standard engineering data?<br>একটি চার-স্ট্রোক অভ্যন্তরীণ দহন ইঞ্জিন সাইকেলে, আদর্শ ইঞ্জিনিয়ারিং ডেটা অনুসারে কোন সুনির্দিষ্ট অপারেশনাল প্যারামিটারগুলো ইনলেট ভালভ কনফিগারেশনের আচরণ নির্দেশ করে?",
+    options: ["(A) Opens at 10° — 20° before TDC and closes at 25° — 40° after BDC / TDC-এর আগে ১০° — ২০° কোণে খোলে এবং BDC-এর পরে ২৫° — ৪০° কোণে বন্ধ হয়", "(B) Opens at 30° — 50° before BDC and closes at 10° — 15° after TDC / BDC-এর আগে ৩০° — ৫০° কোণে খোলে এবং TDC-এর পরে ১০° — ১৫° কোণে বন্ধ হয়", "(C) Opens at 10° — 15° before TDC and closes at 15° — 20° after TDC / TDC-এর আগে ১০° — ১৫° কোণে খোলে এবং TDC-এর পরে ১৫° — ২০° কোণে বন্ধ হয়", "(D) None of These / এগুলোর কোনোটিই নয়"],
+    ans: 0,
+    sol: "The standard operational timings for the inlet valve configuration specify that it opens at 10° — 20° before Top Dead Centre (TDC) and closes at 25° — 40° after Bottom Dead Centre (BDC).<br>ইনলেট ভালভ কনফিগারেশনের জন্য প্রমিত পরিচালন টাইমিং নির্দেশ করে যে এটি টপ ডেড সেন্টার (TDC)-এর আগে ১০° — ২০° কোণে খোলে এবং বটম ডেড সেন্টার (BDC)-এর পরে ২৫° — ৪০° কোণে বন্ধ হয়।"
+},
+{
+    q: "Q49. In an internal combustion engine, Indicated Horsepower (IHP) represents the absolute power developed within the engine cylinder. What is the explicit formula for calculating IHP?<br>একটি অভ্যন্তরীণ দহন ইঞ্জিনে, ইন্ডিকেটেড হর্সপাওয়ার (IHP) ইঞ্জিনের সিলিন্ডারের ভিতরে উৎপন্ন পরম শক্তিকে নির্দেশ করে। IHP গণনার সঠিক সূত্র কোনটি?",
+    options: ["(A) IHP = (2 * pi * N * T) / 4500", "(B) IHP = (PLAN / 4500) * K", "(C) IHP = BHP - FHP", "(D) IHP = (Force * Distance) / Time"],
+    ans: 1,
+    sol: "Indicated Horsepower (IHP), which reflects the absolute pressure force energy generated within the cylinder core, is computed via the standardized expression IHP = (PLAN / 4500) * K.<br>ইন্ডিকেটেড হর্সপাওয়ার (IHP), যা সিলিন্ডার কোরের ভিতরে উৎপন্ন পরম চাপ শক্তিকে প্রতিফলিত করে, তা প্রমিত সমীকরণ IHP = (PLAN / 4500) * K-এর মাধ্যমে গণনা করা হয়।"
+},
+{
+    q: "Q50. Consider the operation and utility parameters of a dashboard Proximity Sensor Indicator array:<br>Statement I: Proximity sensor systems assist the driver during tight parking operations by monitoring surrounding boundaries.<br>Statement II: Proximity sensors are completely disabled during heavy traffic conditions to prevent audible buzzing alarms.<br>ড্যাশবোর্ড প্রক্সিমিটি সেন্সর নির্দেশক বিন্যাসের অপারেশন এবং ইউটিলিটি প্যারামিটার বিবেচনা করুন:<br>বিবৃতি I: প্রক্সিমিটি সেন্সর সিস্টেমগুলো চারপাশের সীমানা পর্যবেক্ষণের মাধ্যমে সংকীর্ণ পার্কিংয়ের সময় চালককে সহায়তা করে।<br>বিবৃতি II: শ্রবণযোগ্য গুঞ্জন (buzzing) অ্যালার্ম প্রতিরোধ করতে ভারী ট্রাফিকের সময় প্রক্সিমিটি সেন্সরগুলো সম্পূর্ণ নিষ্ক্রিয় থাকে।",
+    options: ["(A) Only I follows / শুধুমাত্র I অনুসরণ করে", "(B) Only II follows / শুধুমাত্র II অনুসরণ করে", "(C) Both I and II follow / উভয়ই অনুসরণ করে", "(D) Neither I nor II follows / কোনোটিই অনুসরণ করে না"],
+    ans: 0,
+    sol: "Statement I is correct because proximity sensor arrays measure local boundary gaps to prevent low-speed parking scrapes. Statement II is incorrect; sensors remain active during stop-and-go conditions.<br>বিবৃতি I সঠিক কারণ প্রক্সিমিটি সেন্সর বিন্যাসগুলো কম গতিতে পার্কিংয়ের সময় ঘর্ষণ রোধ করতে চারপাশের সীমানার দূরত্ব পরিমাপ করে। বিবৃতি II ভুল; স্টপ-অ্যান্ড-গো ট্রাফিক অবস্থার সময় সেন্সরগুলো সক্রিয় থাকে।"
+}
+];
+
+// Handles login processing with strict database validation
+function handleLogin(event) {
+    event.preventDefault(); // Stop page reload
+    
+    let userInp = document.getElementById("username").value.trim();
+    let passInp = document.getElementById("password").value.trim();
+    
+    // Check if username exists in database and password matches perfectly
+    if (allowedCandidates[userInp] && allowedCandidates[userInp].password === passInp) {
+        // Validation passes -> Save candidate name
+        loggedInUserRealName = allowedCandidates[userInp].name;
+        
+        // Unhide test frame
+        document.getElementById("login-container").style.display = "none";
+        document.getElementById("exam-container").style.display = "block";
+        
+        loadQ();
+        startTimer();
+    } else {
+        // Validation fails -> Block entry
+        alert("Authentication Failed! Incorrect Username or Password.");
+    }
+}
+
+function startTimer() {
+    timerVar = setInterval(()=>{
+        let m=Math.floor(time/60),s=time%60;
+        document.getElementById("timer").innerText=`Time Left: ${m}:${s<10?'0'+s:s}`;
+        time--; 
+        if(time<0) {
+            clearInterval(timerVar);
+            alert("Time is up! Submitting your responses automatically.");
+            submitQuiz();
+        }
+    },1000);
+}
+
+function loadPalette(){
+if(questions.length === 0) return;
+let html='';
+for(let i=0;i<questions.length;i++){
+let color = answers[i]!=null ? '#4CAF50' : '#ddd';
+let textColor = answers[i]!=null ? '#fff' : '#000';
+html += `<button onclick="goQ(${i})" style="margin:4px;width:38px;height:38px;background:${color};color:${textColor};font-weight:bold;border:1px solid #bbb;border-radius:4px;cursor:pointer;">${i+1}</button>`;
+}
+document.getElementById("palette").innerHTML=html;
+}
+
+function goQ(i){ save(); current=i; loadQ(); }
+
+function loadQ(){
+if(questions.length === 0){
+document.getElementById("quiz").innerHTML="<div class='question'><h3>No questions loaded yet. Please add objects to the questions array.</h3></div>";
+return;
+}
+let q=questions[current];
+loadPalette();
+document.getElementById("quiz").innerHTML=`<div class='question'>
+<h3>${q.q}</h3>
+${q.options.map((o,i)=>`<label><input type='radio' name='opt' value='${i}' ${answers[current]==i?'checked':''}> ${o}</label>`).join('')}
+</div>`;
+}
+
+function nextQ(){save(); if(current<questions.length-1) { current++; loadQ(); }}
+function prevQ(){save(); if(current>0) { current--; loadQ(); }}
+
+function save(){
+let s=document.querySelector("input[name='opt']:checked"); 
+if(s) { answers[current]=parseInt(s.value); }
+} 
+
+function confirmSubmission() {
+    save();
+    let attemptedCount = answers.filter(a => a != null).length;
+    let confirmation = confirm(`You have answered ${attemptedCount} out of ${questions.length} questions.\n\nAre you sure you want to finish and submit your exam?`);
+    if (confirmation) {
+        submitQuiz();
+    }
+}
+
+function submitQuiz(){
+if(questions.length === 0) return;
+if(timerVar) clearInterval(timerVar); 
+save();
+
+let correct=0, wrong=0, unattempted=0, neg=0.33, solHTML="";
+questions.forEach((q,i)=>{
+if(answers[i] == null) {
+    unattempted++;
+    solHTML+=`<p style='color:orange; font-weight:bold;'>Q${i+1}: Unattempted ⚪ (Ignored - No Negative Marking)</p><span class='sol-text'><b>Correct Answer:</b> ${q.options[q.ans]}<br><b>Explanation:</b> ${q.sol}</span><hr>`;
+} else if(answers[i] == q.ans){
+    correct++; 
+    solHTML+=`<p class='correct'>Q${i+1}: Correct ✔</p><span class='sol-text'><b>Explanation:</b> ${q.sol}</span><hr>`;
+} else {
+    wrong++; 
+    solHTML+=`<p class='wrong'>Q${i+1}: Wrong ✘ (Your Choice: Option ${answers[i]+1})</p><span class='sol-text'><b>Correct Answer:</b> ${q.options[q.ans]}<br><b>Explanation:</b> ${q.sol}</span><hr>`;
+}
+});
+
+let score = correct - (wrong * neg);
+if(score < 0) score = 0;
+
+// Score card generation showing verified real user candidate details
+document.getElementById("result").innerHTML=`<h2>📊 Exam Score Card</h2>
+<div style="background:#eef2f5; padding:15px; border-left:6px solid #4CAF50; margin-bottom:20px; font-size:18px; border-radius: 0 8px 8px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <strong style="color:#333;">Candidate Name:</strong> <span style="color:#4CAF50; font-weight:bold;">${loggedInUserRealName}</span>
+</div>
+<p class='correct'>Correct Answers: ${correct} (+${correct} Marks)</p>
+<p class='wrong'>Wrong Answers: ${wrong} (-${(wrong * neg).toFixed(2)} Marks)</p>
+<p style='color:orange; font-weight:bold;'>Unattempted (Ignored): ${unattempted} (0.00 Penalty)</p>
+<p>Negative Deduction: ${(wrong * neg).toFixed(2)}</p>
+<p style="font-size:22px; margin-top:15px;"><b>Final Net Score: <span style="color:#0056b3;">${score.toFixed(2)}</span> / ${questions.length}</b></p>
+<br>
+<h2>🔍 Step-by-Step Explanations</h2>` + solHTML;
+
+window.scrollTo({top: document.getElementById("result").offsetTop, behavior: 'smooth'});
+document.getElementById("quiz").style.display='none';
+document.getElementById("palette").style.display='none';
+document.querySelectorAll('#exam-container button').forEach(b=>b.style.display='none');
+showQuestionReview();
+}
+
+function showQuestionReview(){
+let review='<h2>📚 Review All Questions & Answers</h2>';
+questions.forEach((q,i)=>{
+ review += `<div class='question'>
+    <h3>${i+1}. ${q.q}</h3>
+    ${q.options.map(o=>`<div>${o}</div>`).join('')}
+    <div style='margin-top:10px; color:green; font-weight:bold;'>Correct Answer: ${q.options[q.ans]}</div>
+    <div style='margin-top:5px; color:#555; font-style:italic;'><b>Explanation:</b> ${q.sol}</div>
+ </div>`;
+});
+review += `<button onclick=\"downloadQuestionsPDF()\">📄 Make PDF (With Answers)</button><div id='pdfArea'></div>`;
+document.getElementById('result').innerHTML += review;
+}
+
+function downloadQuestionsPDF(){
+ let win=window.open('','_blank');
+ let content=`<html><head><title>Exam Answer Key</title>
+ <style>
+    body { font-family: Arial, sans-serif; margin: 30px; line-height: 1.6; }
+    h1 { text-align: center; color: #333; }
+    .q-block { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; page-break-inside: avoid; }
+    .ans-line { color: green; font-weight: bold; margin-top: 5px; }
+    .sol-line { color: #555; font-style: italic; margin-top: 5px; background: #f9f9f9; padding: 8px; border-left: 3px solid #4CAF50; }
+ </style>
+ </head><body>`;
+ 
+ content += `<h1>TestVantage - QUESTION BANK & ANSWER KEY</h1>`;
+ content += `<p><b>Candidate Name:</b> ${loggedInUserRealName}</p><hr>`;
+ 
+ questions.forEach((q,i)=>{
+   content += `<div class='q-block'>`;
+   content += `<h3>${i+1}. ${q.q}</h3>`;
+   q.options.forEach(op=>content += `<div>${op}</div>`);
+   content += `<div class='ans-line'>Correct Answer: ${q.options[q.ans]}</div>`;
+   content += `<div class='sol-line'><b>Explanation:</b> ${q.sol}</div>`;
+   content += `</div>`;
+ });
+ 
+ content += `</body></html>`;
+ win.document.write(content);
+ win.document.close();
+ win.print();
+}
+</script>
+
+</body>
+</html>
