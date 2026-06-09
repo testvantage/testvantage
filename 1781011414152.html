@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Exam Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo"><i class="fas fa-graduation-cap"></i> ExamPortal</div>
+        <div class="user-profile"><i class="fas fa-user-circle"></i> পরীক্ষার্থী</div>
+    </header>
+
+    <main class="container">
+        
+        <section id="home-page" class="page-section">
+            <h2 class="section-title">আপনার পছন্দের পরীক্ষাটি বেছে নিন</h2>
+            <div class="category-grid">
+                
+                <div class="category-card railway" onclick="startExam('Railway')">
+                    <div class="card-icon"><i class="fas fa-train"></i></div>
+                    <h3>রেলওয়ে পরীক্ষা (RRB)</h3>
+                    <p>ALP, NTPC, Group D এবং অন্যান্য মক টেস্ট</p>
+                    <button class="btn">টেস্ট শুরু করুন</button>
+                </div>
+
+                <div class="category-card ssc" onclick="startExam('SSC')">
+                    <div class="card-icon"><i class="fas fa-building"></i></div>
+                    <h3>SSC পরীক্ষা</h3>
+                    <p>CGL, CHSL, MTS এবং CPO মক টেস্ট</p>
+                    <button class="btn">টেস্ট শুরু করুন</button>
+                </div>
+
+                <div class="category-card banking" onclick="startExam('Banking')">
+                    <div class="card-icon"><i class="fas fa-university"></i></div>
+                    <h3>ব্যাংকিং পরীক্ষা</h3>
+                    <p>IBPS, SBI PO / Clerk মক টেস্ট</p>
+                    <button class="btn">টেস্ট শুরু করুন</button>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="exam-page" class="page-section hidden">
+            <div class="exam-header">
+                <h2 id="exam-title">Exam</h2>
+                <div class="timer-box"><i class="fas fa-clock"></i> সময় বাকি: <span id="timer">10:00</span></div>
+            </div>
+
+            <div class="exam-layout">
+                <div class="question-container">
+                    <div class="question-number" id="q-num">প্রশ্ন ১:</div>
+                    <div class="question-text" id="q-text">এখানে প্রশ্নটি দেখানো হবে।</div>
+                    
+                    <div class="options-container" id="options-box">
+                        </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="prevQuestion()"><i class="fas fa-arrow-left"></i> আগেরটি</button>
+                        <button class="btn btn-success" onclick="nextQuestion()">পরেরটি <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <h3>প্রশ্ন তালিকা</h3>
+                    <div class="palette-grid" id="palette-box">
+                        </div>
+                    <hr>
+                    <button class="btn btn-danger btn-full" onclick="submitExam()">পরীক্ষা শেষ করুন</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="result-page" class="page-section hidden">
+            <div class="result-card">
+                <i class="fas fa-trophy trophy-icon"></i>
+                <h2>পরীক্ষার ফলাফল</h2>
+                <p class="score-text">আপনার স্কোর: <span id="final-score">0</span> / <span id="total-score">0</span></p>
+                <button class="btn" onclick="goToHome()"><i class="fas fa-home"></i> হোমপেজে ফিরুন</button>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
